@@ -1,0 +1,167 @@
+<script type="text/javascript">
+    window.onload = function () {
+        mixpanel.register({
+            "Page": "RU-main"
+        });
+
+        var seo_targets = {
+            about_company1: ['click', '#header .b-header__menu .b-header__menu-item:nth-of-type(1) a'],
+            about_company2: ['click', '#header .b-header__menu .b-header__menu-item:nth-of-type(2) a'],
+            about_company3: ['click', '#header .b-header__menu .b-header__menu-item:nth-of-type(3) a'],
+            about_company4: ['click', '#header .b-header__menu .b-header__menu-item:nth-of-type(4) a'],
+            about_company5: ['click', '#header a[href="#form"]'],
+            youtube: ['click', '#video-view .b-video__frame'],
+            // form_clicked: ['click', '#form input[type="submit"]'],
+            // form_submitted: ['submit', '#form input[type="submit"]'],
+        };
+
+        function track(label) {
+            return function () {
+                console.log('send', label);
+                mixpanel.track(label);
+            }
+        }
+
+        var form = document.querySelector('#form form');
+        // form.addEventListener('click', function (evt) {
+        //     //mixpanel.identify(e.currentTarget.Email.value);
+        //     // console.log(evt);
+        //     // debugger;
+        //
+        //     var name = $('#form form input[name="field0"]').val();
+        //     var email = $('#form form input[name="field1"]').val();
+        //     var phone = $('#form form input[name="field2"]').val();
+        //     var comment = $('#form form input[name="field3"]').val();
+        //
+        //     console.log('send', 'click', 'Identity from FORM submit', email, phone, name);
+        //     mixpanel.alias(email);
+        //     mixpanel.people.set({
+        //         "email__form": email,
+        //         "$phone": phone,
+        //         "$name": name,
+        //         "$comment": comment,
+        //     });
+        //     mixpanel.register({
+        //         "email__form": email,
+        //         "$phone": phone,
+        //         "$name": name,
+        //         "$comment": name,
+        //     });
+        // });
+
+        form.addEventListener('submit', function (e) {
+            var name = e.currentTarget.field0.value;
+            var email = e.currentTarget.field1.value;
+            var phone = e.currentTarget.field2.value;
+            var comment = e.currentTarget.field3.value;
+
+            console.log('send', 'click', 'Identity from FORM submit', name, email, phone, comment);
+            mixpanel.alias(email);
+            mixpanel.people.set({
+                "email__form": email,
+                "$phone": phone,
+                "$name": name,
+                "$comment": comment
+            });
+            mixpanel.register({
+                "email__form": email,
+                "$phone": phone,
+                "$name": name,
+                "$comment": comment
+            });
+        });
+
+
+        function getAllUrlParams(url) {
+
+            // get query string from url (optional) or window
+            var queryString = url ? url.split('?')[1] : window.location.search.slice(1);
+
+            // we'll store the parameters here
+            var obj = {};
+
+            // if query string exists
+            if (queryString) {
+
+                // stuff after # is not part of query string, so get rid of it
+                queryString = queryString.split('#')[0];
+
+                // split our query string into its component parts
+                var arr = queryString.split('&');
+
+                for (var i = 0; i < arr.length; i++) {
+                    // separate the keys and the values
+                    var a = arr[i].split('=');
+
+                    // set parameter name and value (use 'true' if empty)
+                    var paramName = a[0];
+                    var paramValue = typeof (a[1]) === 'undefined' ? true : a[1];
+
+                    // (optional) keep case consistent
+                    paramName = paramName.toLowerCase();
+                    if (typeof paramValue === 'string') paramValue = paramValue.toLowerCase();
+
+                    // if the paramName ends with square brackets, e.g. colors[] or colors[2]
+                    if (paramName.match(/\[(\d+)?\]$/)) {
+
+                        // create key if it doesn't exist
+                        var key = paramName.replace(/\[(\d+)?\]/, '');
+                        if (!obj[key]) obj[key] = [];
+
+                        // if it's an indexed array e.g. colors[2]
+                        if (paramName.match(/\[\d+\]$/)) {
+                            // get the index value and add the entry at the appropriate position
+                            var index = /\[(\d+)\]/.exec(paramName)[1];
+                            obj[key][index] = paramValue;
+                        } else {
+                            // otherwise add the value to the end of the array
+                            obj[key].push(paramValue);
+                        }
+                    } else {
+                        // we're dealing with a string
+                        if (!obj[paramName]) {
+                            // if it doesn't exist, create property
+                            obj[paramName] = paramValue;
+                        } else if (obj[paramName] && typeof obj[paramName] === 'string') {
+                            // if property does exist and it's a string, convert it to an array
+                            obj[paramName] = [obj[paramName]];
+                            obj[paramName].push(paramValue);
+                        } else {
+                            // otherwise add the property
+                            obj[paramName].push(paramValue);
+                        }
+                    }
+                }
+            }
+
+            return obj;
+        }
+
+        var params = getAllUrlParams();
+        if (params) {
+            mixpanel.identify(params.email);
+            mixpanel.people.set({
+                "$name": params.email,
+                "$email": params.email,
+                "lang": params.lang,
+                "utm_source": params.utm_source,
+                "utm_medium": params.utm_medium,
+                "utm_term": params.utm_term,
+                "utm_content": params.utm_content,
+                "utm_campaign": params.utm_campaign
+            });
+
+            console.log('send', 'Identity from GET params', params);
+        }
+
+        mixpanel.track("page_loaded");
+        for (var label in seo_targets) {
+            var event = seo_targets[label][0];
+            var seo_length = seo_targets[label].length;
+            for (var i = 1; i < seo_length; i++) {
+                // console.log(document.querySelector(seo_targets[label][i]));
+                document.querySelector(seo_targets[label][i]).addEventListener(event, track(label));
+            }
+        }
+    };
+</script>
